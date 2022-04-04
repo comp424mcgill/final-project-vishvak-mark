@@ -85,9 +85,7 @@ class Simulator:
         is_end, p0_score, p1_score = self.world.step()
         while not is_end:
             is_end, p0_score, p1_score = self.world.step()
-        logger.info(
-            f"Run finished. Player {PLAYER_1_NAME}: {p0_score}, Player {PLAYER_2_NAME}: {p1_score}"
-        )
+        logger.info(f'Run finished. Player {PLAYER_1_NAME}: {p0_score}, Player {PLAYER_2_NAME}: {p1_score}')
         return p0_score, p1_score, self.world.p0_time, self.world.p1_time
 
     def autoplay(self):

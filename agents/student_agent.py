@@ -1,4 +1,6 @@
 # Student agent: Add your own agent here
+import numpy as np
+
 from agents.agent import Agent
 from store import register_agent
 import sys
@@ -20,6 +22,39 @@ class StudentAgent(Agent):
             "d": 2,
             "l": 3,
         }
+        self.moves = ((-1, 0), (0, 1), (1, 0), (0, -1))
+
+    def check_valid_step(self, start_pos, end_pos, barrier_dir, adv_pos, chess_board, max_step):
+        """
+        Check if the step the agent takes is valid (reachable and within max steps).
+
+        Parameters
+        ----------
+        start_pos : tuple
+            The start position of the agent.
+        end_pos : np.ndarray
+            The end position of the agent.
+        barrier_dir : int
+            The direction of the barrier.
+        """
+        # Endpoint already has barrier or is boarder
+        r, c = end_pos
+        if chess_board[r, c, barrier_dir]:
+            return False
+        if np.array_equal(start_pos, end_pos):
+            return True
+
+        x_diff = abs(start_pos[0] - end_pos[0])
+        y_diff = abs(start_pos[1] - end_pos[1])
+        if (x_diff + y_diff <= max_step):
+            return True
+        else:
+            return False
+
+    def dist(self, c1, c2):
+        x_dist = c1[0] - c2[0]
+        y_dist = c1[1] - c2[1]
+        return (x_dist, y_dist)
 
     def step(self, chess_board, my_pos, adv_pos, max_step):
         """
@@ -36,5 +71,38 @@ class StudentAgent(Agent):
 
         Please check the sample implementation in agents/random_agent.py or agents/human_agent.py for more details.
         """
-        # dummy return
-        return my_pos, self.dir_map["u"]
+        poss_moves = []
+        x_dist = my_pos[0] - adv_pos[0]
+        y_dist = my_pos[1] - adv_pos[1]
+        size = len(chess_board)
+        best_moves = []
+        if (not chess_board[adv_pos[0],adv_pos[1], 0]):
+            best_moves.append((adv_pos[0]+1,adv_pos[1]))
+        if (not chess_board[adv_pos[0], adv_pos[1], 1]):
+            best_moves.append((adv_pos[0], adv_pos[1]+1))
+        if (not chess_board[adv_pos[0], adv_pos[1], 2]):
+            best_moves.append((adv_pos[0]-1, adv_pos[1]))
+        if (not chess_board[adv_pos[0], adv_pos[1], 3]):
+            best_moves.append((adv_pos[0], adv_pos[1]-1))
+        for i in range(size):
+            for j in range(size):
+                dir = np.random.randint(0, 4)
+                coord = (i,j)
+                #print("hi")
+                #print(coord)
+                #print(dir)
+                if (self.check_valid_step(my_pos, coord, dir, adv_pos, chess_board, max_step)):
+                    #print(coord)
+                    poss_moves.append(coord)
+        min = 100
+        final = 0
+        for move in poss_moves:
+            #print(move)
+            for move2 in best_moves:
+                x_d = move[0] - move2[0]
+                y_d = move[1] - move2[1]
+                if (abs(x_d)+abs(y_d) < min):
+                    min = abs(x_d)+abs(y_d)
+                    final = move
+        #dummy return
+        return final, 1
