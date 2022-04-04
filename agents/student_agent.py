@@ -24,7 +24,7 @@ class StudentAgent(Agent):
         }
         self.moves = ((-1, 0), (0, 1), (1, 0), (0, -1))
 
-    def check_valid_step(self, start_pos, end_pos, barrier_dir, adv_pos, chess_board, max_step):
+    def check_valid_step(self, start_pos, end_pos, adv_pos, chess_board, max_step):
         """
         Check if the step the agent takes is valid (reachable and within max steps).
 
@@ -38,11 +38,13 @@ class StudentAgent(Agent):
             The direction of the barrier.
         """
         # Endpoint already has barrier or is boarder
+        """
         r, c = end_pos
         if chess_board[r, c, barrier_dir]:
             return False
         if np.array_equal(start_pos, end_pos):
             return True
+        """
 
         x_diff = abs(start_pos[0] - end_pos[0])
         y_diff = abs(start_pos[1] - end_pos[1])
@@ -77,25 +79,26 @@ class StudentAgent(Agent):
         size = len(chess_board)
         best_moves = []
         if (not chess_board[adv_pos[0],adv_pos[1], 0]):
-            best_moves.append((adv_pos[0]+1,adv_pos[1]))
+            best_moves.append((adv_pos[0]-1,adv_pos[1]))
         if (not chess_board[adv_pos[0], adv_pos[1], 1]):
             best_moves.append((adv_pos[0], adv_pos[1]+1))
         if (not chess_board[adv_pos[0], adv_pos[1], 2]):
-            best_moves.append((adv_pos[0]-1, adv_pos[1]))
+            best_moves.append((adv_pos[0]+1, adv_pos[1]))
         if (not chess_board[adv_pos[0], adv_pos[1], 3]):
             best_moves.append((adv_pos[0], adv_pos[1]-1))
         for i in range(size):
             for j in range(size):
-                dir = np.random.randint(0, 4)
+                #dir = np.random.randint(0, 4)
                 coord = (i,j)
                 #print("hi")
                 #print(coord)
                 #print(dir)
-                if (self.check_valid_step(my_pos, coord, dir, adv_pos, chess_board, max_step)):
+                if (self.check_valid_step(my_pos, coord,  adv_pos, chess_board, max_step) and coord != adv_pos):
                     #print(coord)
                     poss_moves.append(coord)
         min = 100
         final = 0
+        print(best_moves)
         for move in poss_moves:
             #print(move)
             for move2 in best_moves:
@@ -104,5 +107,18 @@ class StudentAgent(Agent):
                 if (abs(x_d)+abs(y_d) < min):
                     min = abs(x_d)+abs(y_d)
                     final = move
-        #dummy return
-        return final, 1
+        dis = self.dist(final, adv_pos)
+        if (abs(dis[0]) <= abs(dis[1])):
+            if (dis[1] < 0):
+                dir = 1
+            else:
+                dir = 3
+        else:
+            if (dis[0] < 0):
+                dir = 2
+            else:
+                dir = 0
+
+
+
+        return final, dir
