@@ -112,21 +112,14 @@ class StudentAgent(Agent):
         if np.array_equal(start_pos, end_pos):
             return True, state_queue.pop(0)[1]
         while state_queue and not is_reached:
-            # print("hi")
-            # print(state_queue)
             cur_pos, cur_step = state_queue.pop(0)
             r, c = cur_pos
             if cur_step == max_step:
                 break
             for dir, move in enumerate(self.moves):
-                # print("hi3")
-                # print(dir, move)
                 if chess_board[r, c, dir]:
                     continue
-
                 next_pos = cur_pos + move
-                # print("hi2")
-                # print(next_pos)
                 if np.array_equal(next_pos, adv_pos) or tuple(next_pos) in visited:
                     continue
                 if np.array_equal(next_pos, end_pos):
@@ -135,6 +128,38 @@ class StudentAgent(Agent):
                 visited.add(tuple(next_pos))
                 state_queue.append((next_pos, cur_step + 1))
         return is_reached, cur_step+1
+
+    def bsf2(self, chess_board, start_pos1, adv_pos1, max_step, list):
+        start_pos = np.asarray(start_pos1)
+        adv_pos = np.asarray(adv_pos1)
+        # BFS
+        if tuple(start_pos) in list:
+            return start_pos, 0
+        state_queue = [(start_pos, 0)]
+        visited = {tuple(start_pos)}
+        is_reached = False
+        #if np.array_equal(start_pos, end_pos):
+            #return True, state_queue.pop(0)[1]
+        while state_queue and not is_reached:
+            cur_pos, cur_step = state_queue.pop(0)
+            r, c = cur_pos
+            for dir, move in enumerate(self.moves):
+                if chess_board[r, c, dir]:
+                    continue
+                next_pos = cur_pos + move
+                if np.array_equal(next_pos, adv_pos) or tuple(next_pos) in visited:
+                    continue
+                if tuple(next_pos) in list:
+                    is_reached = True
+                    # print(tuple(next_pos))
+                    # print(list)
+                    break
+                visited.add(tuple(next_pos))
+                state_queue.append((next_pos, cur_step + 1))
+        # print(next_pos)
+        if tuple(next_pos) not in list:
+            return False
+        return tuple(next_pos), cur_step + 1
 
 
     def step(self, chess_board, my_pos, adv_pos, max_step):
@@ -176,15 +201,18 @@ class StudentAgent(Agent):
         min = 100
         final = []
         for move in best_moves:
+            bfs = self.bsf2(chess_board, move, adv_pos, max_step, poss_moves)
+            # print(bfs)
+            if bfs == False:
+                continue
+            else:
+                if (bfs[1] < min):
+                    min = bfs[1]
+                    final = bfs[0]
+        """
+        for move in best_moves:
             for move2 in poss_moves:
                 bfs = self.bfs(chess_board, move, move2, adv_pos, max_step)
-                """
-                if move == move2:
-                    print(min)
-                    print(final)
-                    print(bfs)
-                    print(bfs[1])
-                    print(move2)"""
                 if (bfs[0]):
                     #if (bfs[1]==0):
                     if (bfs[1] < min):
@@ -192,6 +220,7 @@ class StudentAgent(Agent):
                         final = move2
                 #print(final)
         #print(final)
+        """
         if final == []:
             for move in poss_moves:
                 for move2 in best_moves:
@@ -200,7 +229,6 @@ class StudentAgent(Agent):
                     if (abs(x_d) + abs(y_d) < min):
                         min = abs(x_d) + abs(y_d)
                         final = move
-
         # picks the best possible direction to put the barrier at
         dis = self.dist(final, adv_pos)
         if (abs(dis[0]) <= abs(dis[1])):
@@ -224,8 +252,5 @@ class StudentAgent(Agent):
                     dir = self.barrier_chooser(chess_board, final, 1)
                 else:
                     dir = self.barrier_chooser(chess_board, final, 3)
-
-        # print(final)
-        # print(dir)
 
         return final, dir
