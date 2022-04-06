@@ -28,11 +28,11 @@ def get_args():
         help="In autoplay mode, the maximum board size",
     )
     parser.add_argument("--display", action="store_true", default=False)
-    parser.add_argument("--display_delay", type=float, default=0.4)
+    parser.add_argument("--display_delay", type=float, default=2.0)
     parser.add_argument("--display_save", action="store_true", default=False)
     parser.add_argument("--display_save_path", type=str, default="plots/")
     parser.add_argument("--autoplay", action="store_true", default=False)
-    parser.add_argument("--autoplay_runs", type=int, default=1000)
+    parser.add_argument("--autoplay_runs", type=int, default=100)
     args = parser.parse_args()
     return args
 
