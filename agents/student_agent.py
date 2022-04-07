@@ -103,7 +103,7 @@ class StudentAgent(Agent):
                 dir = i
                 return dir
 
-    def check_endgame(self, chess_board, player_pos, opponent_pos):
+    def check_endgame(self, chess_board, player_pos, opponent_pos, poss_moves):
 
         board_size = math.sqrt(chess_board.size / 2)
         # Union-Find
@@ -131,6 +131,22 @@ class StudentAgent(Agent):
                     pos_b = find((r + move[0], c + move[1]))
                     if pos_a != pos_b:
                         union(pos_a, pos_b)
+
+      # turn 1: [(x,y),(a,b),(c,d)]
+   # (x,y) _> calc utlity of our mvoe -> find best move for opp in response -> calculate its utlity -> return to top
+   # -> repeat for all moves in list
+   # -> take the max utlity of all the 3 moves
+        is_true = False
+        for move in poss_moves:
+            # we calculate the utlity of our move
+
+            if is_true:
+                break
+            else:
+                # we run the opp move and calculate it's utility
+                pass
+
+        # return the best move
 
         for r in range(board_size):
             for c in range(board_size):
@@ -210,71 +226,44 @@ class StudentAgent(Agent):
             return False
         return tuple(next_pos), cur_step + 1
 
-
-    def step(self, chess_board, my_pos, adv_pos, max_step):
-        """
-        Implement the step function of your agent here.
-        You can use the following variables to access the chess board:
-        - chess_board: a numpy array of shape (x_max, y_max, 4)
-        - my_pos: a tuple of (x, y)
-        - adv_pos: a tuple of (x, y)
-        - max_step: an integer
-
-        You should return a tuple of ((x, y), dir),
-        where (x, y) is the next position of your agent and dir is the direction of the wall
-        you want to put on.
-
-        Please check the sample implementation in agents/random_agent.py or agents/human_agent.py for more details.
-        """
-        poss_moves = []
-        x_dist = my_pos[0] - adv_pos[0]
-        y_dist = my_pos[1] - adv_pos[1]
-        size = len(chess_board)
+    def find_best_moves(self, chess_board, adv_pos):
         best_moves = []
         # finds the best tiles to move to
-        if (not chess_board[adv_pos[0],adv_pos[1], 0]):
-            best_moves.append((adv_pos[0]-1,adv_pos[1]))
+        if (not chess_board[adv_pos[0], adv_pos[1], 0]):
+            best_moves.append((adv_pos[0] - 1, adv_pos[1]))
         if (not chess_board[adv_pos[0], adv_pos[1], 1]):
-            best_moves.append((adv_pos[0], adv_pos[1]+1))
+            best_moves.append((adv_pos[0], adv_pos[1] + 1))
         if (not chess_board[adv_pos[0], adv_pos[1], 2]):
-            best_moves.append((adv_pos[0]+1, adv_pos[1]))
+            best_moves.append((adv_pos[0] + 1, adv_pos[1]))
         if (not chess_board[adv_pos[0], adv_pos[1], 3]):
-            best_moves.append((adv_pos[0], adv_pos[1]-1))
+            best_moves.append((adv_pos[0], adv_pos[1] - 1))
+        return best_moves
+
+    def get_valid_moves(self, chess_board, my_pos, adv_pos, max_step):
+        poss_moves = []
+        size = len(chess_board)
         # gets all tiles on the board that are reachable and adds to poss_moves
         for i in range(size):
             for j in range(size):
-                coord = (i,j)
-                if (self.check_valid_step(my_pos, coord,  adv_pos, chess_board, max_step) and coord != adv_pos):
+                coord = (i, j)
+                if (self.check_valid_step(my_pos, coord, adv_pos, chess_board, max_step) and coord != adv_pos):
                     poss_moves.append(coord)
-        # finds move from poss_moves that is closest to the 'best tile'
-
-        utility = 0
+        return poss_moves
 
 
-
-
+    def pick_moves(self, chess_board, adv_pos, max_step, poss_moves, best_moves):
+        #BFS
         min = 100
         final = []
         for move in best_moves:
             bfs = self.bsf2(chess_board, move, adv_pos, max_step, poss_moves)
-            # print(bfs)
             if bfs == False:
                 continue
             else:
                 if (bfs[1] < min):
                     min = bfs[1]
                     final = bfs[0]
-        """
-        for move in best_moves:
-            for move2 in poss_moves:
-                bfs = self.bfs(chess_board, move, move2, adv_pos, max_step)
-                if (bfs[0]):
-                    #if (bfs[1]==0):
-                    if (bfs[1] < min):
-                        min = bfs[1]
-                        final = move2
-
-        """
+        #if BFS fails -> Backup
         if final == []:
             for move in poss_moves:
                 for move2 in best_moves:
@@ -283,8 +272,9 @@ class StudentAgent(Agent):
                     if (abs(x_d) + abs(y_d) < min):
                         min = abs(x_d) + abs(y_d)
                         final = move
+        return final
 
-        # picks the best possible direction to put the barrier at
+    def choose_dir(self, adv_pos, chess_board, final):
         dis = self.dist(final, adv_pos)
         if (abs(dis[0]) <= abs(dis[1])):
             if (dis[1] < 0 and not chess_board[final[0], final[1], 1]):
@@ -307,5 +297,32 @@ class StudentAgent(Agent):
                     dir = self.barrier_chooser(chess_board, final, 1)
                 else:
                     dir = self.barrier_chooser(chess_board, final, 3)
+        return dir
 
+
+    def step(self, chess_board, my_pos, adv_pos, max_step):
+        """
+        Implement the step function of your agent here.
+        You can use the following variables to access the chess board:
+        - chess_board: a numpy array of shape (x_max, y_max, 4)
+        - my_pos: a tuple of (x, y)
+        - adv_pos: a tuple of (x, y)
+        - max_step: an integer
+
+        You should return a tuple of ((x, y), dir),
+        where (x, y) is the next position of your agent and dir is the direction of the wall
+        you want to put on.
+
+        Please check the sample implementation in agents/random_agent.py or agents/human_agent.py for more details.
+        """
+
+        # finds the tiles right next to the opponent that do not have a barrier
+        best_moves = self.find_best_moves(chess_board, adv_pos)
+        # gets all tiles on the board that are reachable and adds to poss_moves
+        poss_moves = self.get_valid_moves(chess_board,my_pos, adv_pos, max_step)
+        # finds move from poss_moves that is closest to the 'best tile'
+        final = self.pick_moves(chess_board,adv_pos,max_step,poss_moves,best_moves)
+
+        # picks the best possible direction to put the barrier at
+        dir = self.choose_dir(adv_pos, chess_board, final)
         return final, dir
