@@ -1,4 +1,6 @@
 # Student agent: Add your own agent here
+import math
+
 import numpy as np
 
 from agents.agent import Agent
@@ -101,6 +103,53 @@ class StudentAgent(Agent):
                 dir = i
                 return dir
 
+    def check_endgame(self, chess_board, player_pos, opponent_pos):
+
+        board_size = math.sqrt(chess_board.size / 2)
+        # Union-Find
+        father = dict()
+        for r in range(board_size):
+            for c in range(board_size):
+                father[(r, c)] = (r, c)
+
+        def find(pos):
+            if father[pos] != pos:
+                father[pos] = find(father[pos])
+            return father[pos]
+
+        def union(pos1, pos2):
+            father[pos1] = pos2
+
+        for r in range(board_size):
+            for c in range(board_size):
+                for dir, move in enumerate(
+                    self.moves[1:3]
+                ):  # Only check down and right
+                    if chess_board[r, c, dir + 1]:
+                        continue
+                    pos_a = find((r, c))
+                    pos_b = find((r + move[0], c + move[1]))
+                    if pos_a != pos_b:
+                        union(pos_a, pos_b)
+
+        for r in range(board_size):
+            for c in range(board_size):
+                find((r, c))
+        p0_r = player_pos
+        p1_r = opponent_pos
+        p0_score = list(father.values()).count(p0_r)
+        p1_score = list(father.values()).count(p1_r)
+        if p0_r == p1_r:
+            return False, 0
+        if p0_score > p1_score:
+            return True, 1000
+        elif p0_score < p1_score:
+            return True, -1000
+        else:
+            player_win = -1  # Tie
+
+
+
     def bfs(self, chess_board, start_pos1, end_pos1, adv_pos1, max_step):
         start_pos = np.asarray(start_pos1)
         end_pos = np.asarray(end_pos1)
@@ -198,6 +247,12 @@ class StudentAgent(Agent):
                 if (self.check_valid_step(my_pos, coord,  adv_pos, chess_board, max_step) and coord != adv_pos):
                     poss_moves.append(coord)
         # finds move from poss_moves that is closest to the 'best tile'
+
+        utility = 0
+
+
+
+
         min = 100
         final = []
         for move in best_moves:
@@ -218,8 +273,7 @@ class StudentAgent(Agent):
                     if (bfs[1] < min):
                         min = bfs[1]
                         final = move2
-                #print(final)
-        #print(final)
+
         """
         if final == []:
             for move in poss_moves:
@@ -229,6 +283,7 @@ class StudentAgent(Agent):
                     if (abs(x_d) + abs(y_d) < min):
                         min = abs(x_d) + abs(y_d)
                         final = move
+
         # picks the best possible direction to put the barrier at
         dis = self.dist(final, adv_pos)
         if (abs(dis[0]) <= abs(dis[1])):
