@@ -194,7 +194,7 @@ class StudentAgent(Agent):
                 state_queue.append((next_pos, cur_step + 1))
         return is_reached, cur_step+1
 
-    def bsf2(self, chess_board, start_pos1, adv_pos1, max_step, list):
+    def bsf2(self, chess_board, start_pos1, adv_pos1, list):
         start_pos = np.asarray(start_pos1)
         adv_pos = np.asarray(adv_pos1)
         # BFS
@@ -251,27 +251,31 @@ class StudentAgent(Agent):
         return poss_moves
 
 
-    def pick_moves(self, chess_board, adv_pos, max_step, poss_moves, best_moves):
+    def pick_moves(self, chess_board, adv_pos, poss_moves, best_moves):
         #BFS
         min = 100
         final = []
+        print(len(poss_moves))
         for move in best_moves:
-            bfs = self.bsf2(chess_board, move, adv_pos, max_step, poss_moves)
+            bfs = self.bsf2(chess_board, move, adv_pos, poss_moves)
+            #print(bfs)
             if bfs == False:
                 continue
             else:
-                if (bfs[1] < min):
-                    min = bfs[1]
-                    final = bfs[0]
+                final.append(bfs[0])
+                #print(bfs[0])
+                #if (bfs[1] <= min):
+                    #min = bfs[1]
+                    #final = bfs[0]
         #if BFS fails -> Backup
         if final == []:
             for move in poss_moves:
                 for move2 in best_moves:
                     x_d = move[0] - move2[0]
                     y_d = move[1] - move2[1]
-                    if (abs(x_d) + abs(y_d) < min):
+                    if (abs(x_d) + abs(y_d) <= min):
                         min = abs(x_d) + abs(y_d)
-                        final = move
+                        final.append(move)
         return final
 
     def choose_dir(self, adv_pos, chess_board, final):
@@ -321,8 +325,16 @@ class StudentAgent(Agent):
         # gets all tiles on the board that are reachable and adds to poss_moves
         poss_moves = self.get_valid_moves(chess_board,my_pos, adv_pos, max_step)
         # finds move from poss_moves that is closest to the 'best tile'
-        final = self.pick_moves(chess_board,adv_pos,max_step,poss_moves,best_moves)
+        moves = self.pick_moves(chess_board,adv_pos,poss_moves,best_moves)
 
         # picks the best possible direction to put the barrier at
-        dir = self.choose_dir(adv_pos, chess_board, final)
+
+        #dir = self.choose_dir(adv_pos, chess_board, final)
+        final = []
+        for move in moves:
+            for i in range(4):
+                r, c = move
+                if not chess_board[r, c, i]:
+                    final.append((move, i))
+
         return final, dir
