@@ -1,5 +1,6 @@
 # Student agent: Add your own agent here
 import math
+from copy import deepcopy
 
 import numpy as np
 
@@ -25,6 +26,8 @@ class StudentAgent(Agent):
             "l": 3,
         }
         self.moves = ((-1, 0), (0, 1), (1, 0), (0, -1))
+        self.opposites = {0: 2, 1: 3, 2: 0, 3: 1}
+
         self.autoplay = True
 
     def check_valid_step(self, start_pos1, end_pos1, adv_pos1, chess_board, max_step):
@@ -103,66 +106,7 @@ class StudentAgent(Agent):
                 dir = i
                 return dir
 
-    def check_endgame(self, chess_board, player_pos, opponent_pos, poss_moves):
 
-        board_size = math.sqrt(chess_board.size / 2)
-        # Union-Find
-        father = dict()
-        for r in range(board_size):
-            for c in range(board_size):
-                father[(r, c)] = (r, c)
-
-        def find(pos):
-            if father[pos] != pos:
-                father[pos] = find(father[pos])
-            return father[pos]
-
-        def union(pos1, pos2):
-            father[pos1] = pos2
-
-        for r in range(board_size):
-            for c in range(board_size):
-                for dir, move in enumerate(
-                    self.moves[1:3]
-                ):  # Only check down and right
-                    if chess_board[r, c, dir + 1]:
-                        continue
-                    pos_a = find((r, c))
-                    pos_b = find((r + move[0], c + move[1]))
-                    if pos_a != pos_b:
-                        union(pos_a, pos_b)
-
-      # turn 1: [(x,y),(a,b),(c,d)]
-   # (x,y) _> calc utlity of our mvoe -> find best move for opp in response -> calculate its utlity -> return to top
-   # -> repeat for all moves in list
-   # -> take the max utlity of all the 3 moves
-        is_true = False
-        for move in poss_moves:
-            # we calculate the utlity of our move
-
-            if is_true:
-                break
-            else:
-                # we run the opp move and calculate it's utility
-                pass
-
-        # return the best move
-
-        for r in range(board_size):
-            for c in range(board_size):
-                find((r, c))
-        p0_r = player_pos
-        p1_r = opponent_pos
-        p0_score = list(father.values()).count(p0_r)
-        p1_score = list(father.values()).count(p1_r)
-        if p0_r == p1_r:
-            return False, 0
-        if p0_score > p1_score:
-            return True, 1000
-        elif p0_score < p1_score:
-            return True, -1000
-        else:
-            player_win = -1  # Tie
 
 
 
@@ -303,6 +247,84 @@ class StudentAgent(Agent):
                     dir = self.barrier_chooser(chess_board, final, 3)
         return dir
 
+    def set_barrier(self, r, c, dir, chess_board):
+        # Set the barrier to True
+        chess_board[r, c, dir] = True
+        # Set the opposite barrier to True
+        move = self.moves[dir]
+        chess_board[r + move[0], c + move[1], self.opposites[dir]] = True
+
+    def check_endgame(self, chess_board, player_pos, opponent_pos, poss_moves):
+        copy = deepcopy(chess_board)
+        print(chess_board.size)
+        board_size = int(math.sqrt(copy.size) / 2)
+        print(board_size)
+
+
+        # Union-Find
+        father = dict()
+        for r in range(board_size):
+            for c in range(board_size):
+                father[(r, c)] = (r, c)
+
+        def find(pos):
+            if father[pos] != pos:
+                father[pos] = find(father[pos])
+            return father[pos]
+
+        def union(pos1, pos2):
+            father[pos1] = pos2
+
+        for r in range(board_size):
+            for c in range(board_size):
+                for dir, move in enumerate(
+                    self.moves[1:3]
+                ):  # Only check down and right
+                    if copy[r, c, dir + 1]:
+                        continue
+                    pos_a = find((r, c))
+                    pos_b = find((r + move[0], c + move[1]))
+                    if pos_a != pos_b:
+                        union(pos_a, pos_b)
+
+        # turn 1: [(x,y),(a,b),(c,d)]
+        # (x,y) _> calc utlity of our mvoe -> find best move for opp in response -> calculate its utlity -> return to top
+        # -> repeat for all moves in list
+        # -> take the max utlity of all the 3 moves
+        is_true = False
+        for move in poss_moves:
+            # we calculate the utlity of our move
+
+            if is_true:
+                break
+            else:
+                # we run the opp move and calculate it's utility
+                pass
+
+        # return the best move
+
+        for r in range(board_size):
+            for c in range(board_size):
+                find((r, c))
+        p0_r = player_pos
+        p1_r = opponent_pos
+        p0_score = list(father.values()).count(p0_r)
+        p1_score = list(father.values()).count(p1_r)
+
+        print("Point Counting")
+        if p0_r == p1_r:
+            print("0")
+            return  0
+        if p0_score > p1_score:
+            print("1000")
+            return  1000
+        elif p0_score < p1_score:
+            print("-1000")
+            return  -1000
+        else:
+            print("0")
+            return 0
+
 
     def step(self, chess_board, my_pos, adv_pos, max_step):
         """
@@ -336,5 +358,7 @@ class StudentAgent(Agent):
                 r, c = move
                 if not chess_board[r, c, i]:
                     final.append((move, i))
+
+        print(self.check_endgame(chess_board, my_pos, adv_pos, poss_moves))
 
         return final, dir
