@@ -43,14 +43,6 @@ class StudentAgent(Agent):
         barrier_dir : int
             The direction of the barrier.
         """
-        # Endpoint already has barrier or is boarder
-        """
-        r, c = end_pos
-        if chess_board[r, c, barrier_dir]:
-            return False
-        if np.array_equal(start_pos, end_pos):
-            return True
-        """
         # checks if shortest distance is reachable
         # does not check whether the path is reachable when factoring in borders
         x_diff = abs(start_pos1[0] - end_pos1[0])
@@ -68,21 +60,15 @@ class StudentAgent(Agent):
         visited = {tuple(start_pos)}
         is_reached = False
         while state_queue and not is_reached:
-            # print("hi")
-            # print(state_queue)
             cur_pos, cur_step = state_queue.pop(0)
             r, c = cur_pos
             if cur_step == max_step:
                 break
             for dir, move in enumerate(self.moves):
-                # print("hi3")
-                # print(dir, move)
                 if chess_board[r, c, dir]:
                     continue
 
                 next_pos = cur_pos + move
-                # print("hi2")
-                # print(next_pos)
                 if np.array_equal(next_pos, adv_pos) or tuple(next_pos) in visited:
                     continue
                 if np.array_equal(next_pos, end_pos):
@@ -93,7 +79,6 @@ class StudentAgent(Agent):
         return is_reached
 
     def dist(self, c1, c2):
-        # print(type(c1))
         x_dist = c1[0] - c2[0]
         y_dist = c1[1] - c2[1]
         return (x_dist, y_dist)
@@ -107,37 +92,6 @@ class StudentAgent(Agent):
                 return dir
 
 
-
-
-
-    def bfs(self, chess_board, start_pos1, end_pos1, adv_pos1, max_step):
-        start_pos = np.asarray(start_pos1)
-        end_pos = np.asarray(end_pos1)
-        adv_pos = np.asarray(adv_pos1)
-        #BFS
-        state_queue = [(start_pos, 0)]
-        visited = {tuple(start_pos)}
-        is_reached = False
-        if np.array_equal(start_pos, end_pos):
-            return True, state_queue.pop(0)[1]
-        while state_queue and not is_reached:
-            cur_pos, cur_step = state_queue.pop(0)
-            r, c = cur_pos
-            if cur_step == max_step:
-                break
-            for dir, move in enumerate(self.moves):
-                if chess_board[r, c, dir]:
-                    continue
-                next_pos = cur_pos + move
-                if np.array_equal(next_pos, adv_pos) or tuple(next_pos) in visited:
-                    continue
-                if np.array_equal(next_pos, end_pos):
-                    is_reached = True
-                    break
-                visited.add(tuple(next_pos))
-                state_queue.append((next_pos, cur_step + 1))
-        return is_reached, cur_step+1
-
     def bsf2(self, chess_board, start_pos1, adv_pos1, list, final):
         start_pos = np.asarray(start_pos1)
         adv_pos = np.asarray(adv_pos1)
@@ -147,8 +101,7 @@ class StudentAgent(Agent):
         state_queue = [(start_pos, 0)]
         visited = {tuple(start_pos)}
         is_reached = False
-        #if np.array_equal(start_pos, end_pos):
-            #return True, state_queue.pop(0)[1]
+
         while state_queue and not is_reached:
             cur_pos, cur_step = state_queue.pop(0)
             r, c = cur_pos
@@ -160,20 +113,13 @@ class StudentAgent(Agent):
                     continue
                 if tuple(next_pos) in list and tuple(next_pos) not in final:
                     is_reached = True
-                    # print(tuple(next_pos))
-                    # print(list)
                     break
                 visited.add(tuple(next_pos))
                 state_queue.append((next_pos, cur_step + 1))
-        #print("bfs")
-        #print(list)
-        #print(next_pos)
+
         if tuple(next_pos) not in list:
-            #print("hi")
-            #print(next_pos)
             return False
-        #print("bfs")
-        #print(next_pos)
+
         return tuple(next_pos), cur_step + 1
 
     def find_best_moves(self, chess_board, adv_pos):
@@ -205,18 +151,13 @@ class StudentAgent(Agent):
         #BFS
         min = 100
         final = []
-        #print(len(poss_moves))
         for move in best_moves:
             bfs = self.bsf2(chess_board, move, adv_pos, poss_moves, final)
-            #print(bfs)
             if bfs == False:
                 continue
             else:
-                #print("pm")
-                #print(bfs[0])
                 if bfs[0] not in final:
                     final.append(bfs[0])
-                #print(bfs[0])
                 if (bfs[1] <= min):
                     min = bfs[1]
                     min_m = bfs[0]
@@ -236,34 +177,24 @@ class StudentAgent(Agent):
         dis = self.dist(final, adv_pos)
         if (abs(dis[0]) <= abs(dis[1])):
             if (dis[1] < 0 and not chess_board[final[0], final[1], 1]):
-                #print("yo1")
                 dir = 1
             elif (dis[1] >= 0 and not chess_board[final[0], final[1], 3]):
-                #print("yo2")
-                #print(chess_board[final[0], final[1], 3])
-                #print(final)
                 dir = 3
             else:
                 if (dis[0] < 0):
-                    #print("y3")
                     dir = self.barrier_chooser(chess_board, final, 2)
                 else:
-                    #print("y4")
                     dir = self.barrier_chooser(chess_board, final, 0)
 
         else:
             if (dis[0] < 0 and not chess_board[final[0], final[1], 2]):
-                #print("yo5")
                 dir = 2
             elif (dis[0] >= 0 and not chess_board[final[0], final[1], 0]):
-                #print("yo6")
                 dir = 0
             else:
                 if (dis[1] < 0):
-                    #print("yo7")
                     dir = self.barrier_chooser(chess_board, final, 1)
                 else:
-                    #print("yo8")
                     dir = self.barrier_chooser(chess_board, final, 3)
         return dir
 
@@ -275,10 +206,7 @@ class StudentAgent(Agent):
         chess_board[r + move[0], c + move[1], self.opposites[dir]] = True
 
     def check_endgame(self, chess_board, player_pos, opponent_pos):
-        #print(chess_board.size)
         board_size = int(math.sqrt(chess_board.size) / 2)
-        #print(board_size)
-
 
         # Union-Find
         father = dict()
@@ -310,23 +238,18 @@ class StudentAgent(Agent):
             for c in range(board_size):
                 find((r, c))
         p0_r = find(player_pos)
-        #print(opponent_pos)
         p1_r = find(opponent_pos)
         p0_score = list(father.values()).count(p0_r)
         p1_score = list(father.values()).count(p1_r)
 
         #print("Point Counting")
         if p0_r == p1_r:
-            #print("0")
             return  0
         if p0_score > p1_score:
-            #print("1000")
             return  1
         elif p0_score < p1_score:
-            #print("-1000")
             return  -1
         else:
-            #print("0.5")
             return 0.5
 
 
@@ -338,14 +261,9 @@ class StudentAgent(Agent):
         for move in poss_moves:
             copy = deepcopy(chess_board)
             opp_utility = []
-            #print("move")
-            #print(move)
             self.set_barrier(move[0][0], move[0][1], move[1], copy)
             # we calculate the utility of our move by checking endgame and seeing if we won, lost or game still going
-            #print("move")
-            #print(move[0])
             utility = self.check_endgame(copy, move[0], adv_pos)
-            #print(utility)
             # if utility is 1 then we win so we can break out and perform this move
             if utility == 1 and depth == 0:
                 return move
@@ -363,8 +281,6 @@ class StudentAgent(Agent):
                 final = self.generate_full_moves(copy, moves[0])
                 # we calculate the opponents utility for all their possible moves and return min utility
                 opp_utility = min(self.minimax(copy, adv_pos, move[0], final, max_step, 1))
-                #print("opp")
-                #print(opp_utility)
                 dict[move] = opp_utility*-1
             if depth == 1:
                 opp_utility.append(utility)
@@ -377,7 +293,6 @@ class StudentAgent(Agent):
                 return tie
             else:
                 return lose
-        #print(dict[max_move])
         if dict[max_move] == 0:
             m = [k for k, v in dict.items() if v == 0]
             return m
@@ -416,29 +331,18 @@ class StudentAgent(Agent):
         poss_moves = self.get_valid_moves(chess_board,my_pos, adv_pos, max_step)
         # finds move from poss_moves that is closest to the 'best tile'
         moves = self.pick_moves(chess_board,adv_pos,poss_moves,best_moves)
-        #print(moves[0])
-        # picks the best possible direction to put the barrier at
 
-        #dir = self.choose_dir(adv_pos, chess_board, final)
         final = self.generate_full_moves(chess_board, moves[0])
-        #print(final)
 
-        #print("final")
-        #print(final)
         result = self.minimax(chess_board,my_pos,adv_pos,final, max_step)
         dir = -1
         if type(result) == list:
-            #print(result)
             for move in result:
                 if (moves[1] == move[0]):
-                    #print(move[0])
                     dir = self.choose_dir(adv_pos, chess_board, move[0])
                 if dir != -1:
-                    #print("Hi")
-                    #print(move[0], dir)
                     return move[0], dir
             if dir == -1:
                 return result[0][0], result[0][1]
-        #print("hi2")
-        #print(result[0], result[1])
+
         return result[0], result[1]
