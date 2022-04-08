@@ -138,12 +138,12 @@ class StudentAgent(Agent):
                 state_queue.append((next_pos, cur_step + 1))
         return is_reached, cur_step+1
 
-    def bsf2(self, chess_board, start_pos1, adv_pos1, list):
+    def bsf2(self, chess_board, start_pos1, adv_pos1, list, final):
         start_pos = np.asarray(start_pos1)
         adv_pos = np.asarray(adv_pos1)
         # BFS
         if tuple(start_pos) in list:
-            return start_pos, 0
+            return tuple(start_pos), 0
         state_queue = [(start_pos, 0)]
         visited = {tuple(start_pos)}
         is_reached = False
@@ -158,16 +158,22 @@ class StudentAgent(Agent):
                 next_pos = cur_pos + move
                 if np.array_equal(next_pos, adv_pos) or tuple(next_pos) in visited:
                     continue
-                if tuple(next_pos) in list:
+                if tuple(next_pos) in list and tuple(next_pos) not in final:
                     is_reached = True
                     # print(tuple(next_pos))
                     # print(list)
                     break
                 visited.add(tuple(next_pos))
                 state_queue.append((next_pos, cur_step + 1))
-        # print(next_pos)
+        #print("bfs")
+        #print(list)
+        #print(next_pos)
         if tuple(next_pos) not in list:
+            #print("hi")
+            #print(next_pos)
             return False
+        #print("bfs")
+        #print(next_pos)
         return tuple(next_pos), cur_step + 1
 
     def find_best_moves(self, chess_board, adv_pos):
@@ -199,18 +205,21 @@ class StudentAgent(Agent):
         #BFS
         min = 100
         final = []
-        print(len(poss_moves))
+        #print(len(poss_moves))
         for move in best_moves:
-            bfs = self.bsf2(chess_board, move, adv_pos, poss_moves)
+            bfs = self.bsf2(chess_board, move, adv_pos, poss_moves, final)
             #print(bfs)
             if bfs == False:
                 continue
             else:
-                final.append(bfs[0])
+                #print("pm")
                 #print(bfs[0])
-                #if (bfs[1] <= min):
-                    #min = bfs[1]
-                    #final = bfs[0]
+                if bfs[0] not in final:
+                    final.append(bfs[0])
+                #print(bfs[0])
+                if (bfs[1] <= min):
+                    min = bfs[1]
+                    min_m = bfs[0]
         #if BFS fails -> Backup
         if final == []:
             for move in poss_moves:
@@ -219,31 +228,42 @@ class StudentAgent(Agent):
                     y_d = move[1] - move2[1]
                     if (abs(x_d) + abs(y_d) <= min):
                         min = abs(x_d) + abs(y_d)
+                        min_m = move
                         final.append(move)
-        return final
+        return final, min_m
 
     def choose_dir(self, adv_pos, chess_board, final):
         dis = self.dist(final, adv_pos)
         if (abs(dis[0]) <= abs(dis[1])):
             if (dis[1] < 0 and not chess_board[final[0], final[1], 1]):
+                #print("yo1")
                 dir = 1
             elif (dis[1] >= 0 and not chess_board[final[0], final[1], 3]):
+                #print("yo2")
+                #print(chess_board[final[0], final[1], 3])
+                #print(final)
                 dir = 3
             else:
                 if (dis[0] < 0):
+                    #print("y3")
                     dir = self.barrier_chooser(chess_board, final, 2)
                 else:
+                    #print("y4")
                     dir = self.barrier_chooser(chess_board, final, 0)
 
         else:
             if (dis[0] < 0 and not chess_board[final[0], final[1], 2]):
+                #print("yo5")
                 dir = 2
             elif (dis[0] >= 0 and not chess_board[final[0], final[1], 0]):
+                #print("yo6")
                 dir = 0
             else:
                 if (dis[1] < 0):
+                    #print("yo7")
                     dir = self.barrier_chooser(chess_board, final, 1)
                 else:
+                    #print("yo8")
                     dir = self.barrier_chooser(chess_board, final, 3)
         return dir
 
@@ -254,11 +274,10 @@ class StudentAgent(Agent):
         move = self.moves[dir]
         chess_board[r + move[0], c + move[1], self.opposites[dir]] = True
 
-    def check_endgame(self, chess_board, player_pos, opponent_pos, poss_moves):
-        copy = deepcopy(chess_board)
-        print(chess_board.size)
-        board_size = int(math.sqrt(copy.size) / 2)
-        print(board_size)
+    def check_endgame(self, chess_board, player_pos, opponent_pos):
+        #print(chess_board.size)
+        board_size = int(math.sqrt(chess_board.size) / 2)
+        #print(board_size)
 
 
         # Union-Find
@@ -280,51 +299,100 @@ class StudentAgent(Agent):
                 for dir, move in enumerate(
                     self.moves[1:3]
                 ):  # Only check down and right
-                    if copy[r, c, dir + 1]:
+                    if chess_board[r, c, dir + 1]:
                         continue
                     pos_a = find((r, c))
                     pos_b = find((r + move[0], c + move[1]))
                     if pos_a != pos_b:
                         union(pos_a, pos_b)
 
-        # turn 1: [(x,y),(a,b),(c,d)]
-        # (x,y) _> calc utlity of our mvoe -> find best move for opp in response -> calculate its utlity -> return to top
-        # -> repeat for all moves in list
-        # -> take the max utlity of all the 3 moves
-        is_true = False
-        for move in poss_moves:
-            # we calculate the utlity of our move
-
-            if is_true:
-                break
-            else:
-                # we run the opp move and calculate it's utility
-                pass
-
-        # return the best move
-
         for r in range(board_size):
             for c in range(board_size):
                 find((r, c))
-        p0_r = player_pos
-        p1_r = opponent_pos
+        p0_r = find(player_pos)
+        #print(opponent_pos)
+        p1_r = find(opponent_pos)
         p0_score = list(father.values()).count(p0_r)
         p1_score = list(father.values()).count(p1_r)
 
-        print("Point Counting")
+        #print("Point Counting")
         if p0_r == p1_r:
-            print("0")
+            #print("0")
             return  0
         if p0_score > p1_score:
-            print("1000")
-            return  1000
+            #print("1000")
+            return  1
         elif p0_score < p1_score:
-            print("-1000")
-            return  -1000
+            #print("-1000")
+            return  -1
         else:
-            print("0")
-            return 0
+            #print("0.5")
+            return 0.5
 
+
+
+    def minimax(self, chess_board, my_pos, adv_pos, poss_moves, max_step, depth=0):
+        dict = {}
+        lose = 0
+        tie = 0
+        for move in poss_moves:
+            copy = deepcopy(chess_board)
+            opp_utility = []
+            #print("move")
+            #print(move)
+            self.set_barrier(move[0][0], move[0][1], move[1], copy)
+            # we calculate the utility of our move by checking endgame and seeing if we won, lost or game still going
+            #print("move")
+            #print(move[0])
+            utility = self.check_endgame(copy, move[0], adv_pos)
+            #print(utility)
+            # if utility is 1 then we win so we can break out and perform this move
+            if utility == 1 and depth == 0:
+                return move
+            # if utility is -1 we lose so we eliminate this move as an option and continue
+            if utility == -1 and depth == 0:
+                lose = move
+            if utility == 0.5 and depth == 0:
+                tie = move
+            # if utility is 0 the result is undetermined so we keep this move as an option and continue
+            if utility == 0 and depth == 0:
+                # we run the opponents move in response to each of our potential moves
+                best_moves = self.find_best_moves(copy, move[0])
+                poss_moves = self.get_valid_moves(copy, adv_pos, move[0], max_step)
+                moves = self.pick_moves(copy, move[0], poss_moves, best_moves)
+                final = self.generate_full_moves(copy, moves[0])
+                # we calculate the opponents utility for all their possible moves and return min utility
+                opp_utility = min(self.minimax(copy, adv_pos, move[0], final, max_step, 1))
+                #print("opp")
+                #print(opp_utility)
+                dict[move] = opp_utility*-1
+            if depth == 1:
+                opp_utility.append(utility)
+        if depth == 1:
+            return opp_utility
+        if bool(dict):
+            max_move = max(dict, key=dict.get)
+        else:
+            if tie != 0:
+                return tie
+            else:
+                return lose
+        #print(dict[max_move])
+        if dict[max_move] == 0:
+            m = [k for k, v in dict.items() if v == 0]
+            return m
+        return max_move
+
+
+        # return the best move
+    def generate_full_moves(self, chess_board, moves):
+        final = []
+        for move in moves:
+            for i in range(4):
+                r, c = move
+                if not chess_board[r, c, i]:
+                    final.append((move, i))
+        return final
 
     def step(self, chess_board, my_pos, adv_pos, max_step):
         """
@@ -348,17 +416,29 @@ class StudentAgent(Agent):
         poss_moves = self.get_valid_moves(chess_board,my_pos, adv_pos, max_step)
         # finds move from poss_moves that is closest to the 'best tile'
         moves = self.pick_moves(chess_board,adv_pos,poss_moves,best_moves)
-
+        #print(moves[0])
         # picks the best possible direction to put the barrier at
 
         #dir = self.choose_dir(adv_pos, chess_board, final)
-        final = []
-        for move in moves:
-            for i in range(4):
-                r, c = move
-                if not chess_board[r, c, i]:
-                    final.append((move, i))
+        final = self.generate_full_moves(chess_board, moves[0])
+        #print(final)
 
-        print(self.check_endgame(chess_board, my_pos, adv_pos, poss_moves))
-
-        return final, dir
+        #print("final")
+        #print(final)
+        result = self.minimax(chess_board,my_pos,adv_pos,final, max_step)
+        dir = -1
+        if type(result) == list:
+            #print(result)
+            for move in result:
+                if (moves[1] == move[0]):
+                    #print(move[0])
+                    dir = self.choose_dir(adv_pos, chess_board, move[0])
+                if dir != -1:
+                    #print("Hi")
+                    #print(move[0], dir)
+                    return move[0], dir
+            if dir == -1:
+                return result[0][0], result[0][1]
+        #print("hi2")
+        #print(result[0], result[1])
+        return result[0], result[1]
